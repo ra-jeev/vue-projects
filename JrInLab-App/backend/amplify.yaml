@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Stack for creating amplify clients
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Description: Backend stage to deploy resources to - dev/staging/prod
+
+  ApiGatewayUrl:
+    Type: String
+    Description: APi gateway url where the app should connect to
+
+  WssApiGatewayUrl:
+    Type: String
+    Description: Websocket API gateway url where the real time communication will happen
+
+  UserPoolId:
+    Type: String
+    Description: Cognito user pool id
+
+  UserPoolClientId:
+    Type: String
+    Description: Cognito user pool client id
+
+  StudentsWebDomainSuffix:
+    Type: String
+    Description: Domain suffix which the app will use for creating students' websites
+
+  DomainName:
+    Type: String
+    Description: The top level domain name
+
+  StudentsAppDomainPrefix:
+    Type: String
+    Description: The domain prefix where the students app will be hosted
+
+Mappings:
+  StageToBranchName:
+    dev:
+      branch: dev
+    staging:
+      branch: staging
+    prod:
+      branch: main
+
+Resources:
+  StudentsApp:
+    Type: AWS::Amplify::App
+    Properties:
+      Name: !Sub StudentsApp-${Stage}
+      Repository: !Sub '{{resolve:secretsmanager:${Stage}/JrInLab/RepoSecrets:SecretString:Url}}'
+      Description: JrInLab's Students App
+      AccessToken: !Sub '{{resolve:secretsmanager:${Stage}/JrInLab/RepoSecrets:SecretString:AccessToken}}'
+      EnvironmentVariables:
+        - Name: AMPLIFY_MONOREPO_APP_ROOT
+          Value: clients/app
+        - Name: AMPLIFY_DIFF_DEPLOY
+          Value: true
+      BuildSpec: |-
+        version: 0.1
+        applications:
+          - appRoot: clients/app
+            frontend:
+              phases:
+                preBuild:
+                  commands:
+                    - yarn install
+                build:
+                  commands:
+                    - yarn build
+              artifacts:
+                baseDirectory: dist
+                files:
+                  - '**/*'
+              cache:
+                paths:
+                  - node_modules/**/*
+      Tags:
+        - Key: project
+          Value: JrInLab
+
+  StudentsAppBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      BranchName: !FindInMap [StageToBranchName, !Ref Stage, branch]
+      AppId: !GetAtt StudentsApp.AppId
+      Description: !Sub Branch for the ${Stage} stage
+      EnableAutoBuild: true
+      EnvironmentVariables:
+        - Name: APP_API_GW_URL
+          Value: !Ref ApiGatewayUrl
+        - Name: DOMAIN_SUFFIX
+          Value: !Ref StudentsWebDomainSuffix
+        - Name: USER_POOL_ID
+          Value: !Ref UserPoolId
+        - Name: APP_CLIENT_ID
+          Value: !Ref UserPoolClientId
+        - Name: APP_WSS_API_GW_URL
+          Value: !Ref WssApiGatewayUrl
+      Tags:
+        - Key: project
+          Value: JrInLab
+        - Key: stage
+          Value: !Ref Stage
+        - Key: Branch
+          Value: !FindInMap [StageToBranchName, !Ref Stage, branch]
+
+  StudentsAppDomain:
+    Type: AWS::Amplify::Domain
+    Properties:
+      DomainName: !Ref DomainName
+      AppId: !GetAtt StudentsApp.AppId
+      SubDomainSettings:
+        - Prefix: !Ref StudentsAppDomainPrefix
+          BranchName: !GetAtt StudentsAppBranch.BranchName

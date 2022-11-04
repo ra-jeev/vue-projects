@@ -1,0 +1,10 @@
+{
+  "name": "functions",
+  "version": "1.0.0",
+  "description": "netlify functions",
+  "author": "Rajeev R. Sharma",
+  "private": true,
+  "dependencies": {
+    "axios": "^0.19.2"
+  }
+}

@@ -1,0 +1,348 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Rest API Gateway and related lambda functions
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Description: Backend stage to deploy resources to - dev/staging/prod
+
+  TopicArn:
+    Type: String
+    Description: The ARN of the SNS topic where we will publish messages
+
+  TopicName:
+    Type: String
+    Description: The SNS topic name where we can publish messages
+
+  LogRetentionInDays:
+    Type: Number
+    Description: Number of days before the cloudwatch logs get deleted
+
+  TableName:
+    Type: String
+    Description: The DynamoDb table name where we'll store users data on registration
+
+  TableArn:
+    Type: String
+    Description: The ARN of the DynamoDb table
+
+  # KmsKeyArn:
+  #   Type: String
+  #   Description: The ARN of the KMS key which cognito will use to generate secrets and temporary passwords for users
+
+Globals:
+  Function:
+    Architectures:
+      - arm64
+    Runtime: nodejs14.x
+    MemorySize: 128
+    Timeout: 5
+    Tracing: Active
+    Environment:
+      Variables:
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    Tags:
+      project: JrInLab
+      stage: !Ref Stage
+
+Resources:
+  DefineAuthChallengeFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub defineAuthChallenge-${Stage}
+      Description: Function to define the type of auth challenge for user verification
+      CodeUri: src/cognitoTriggers/defineAuthChallenge
+      Handler: index.handler
+      Environment:
+        Variables:
+          SNS_TOPIC_NAME: !Ref TopicArn
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !Ref TopicName
+      Events:
+        Cognito:
+          Type: Cognito
+          Properties:
+            UserPool: !Ref UserPool
+            Trigger: DefineAuthChallenge
+
+  DefineAuthChallengeFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: DefineAuthChallengeFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${DefineAuthChallengeFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  CreateAuthChallengeFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub createAuthChallenge-${Stage}
+      Description: Function to actually create the auth challenge as defined by the defineAuthChallenge function
+      CodeUri: src/cognitoTriggers/createAuthChallenge
+      Handler: index.handler
+      Environment:
+        Variables:
+          SNS_TOPIC_NAME: !Ref TopicArn
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !Ref TopicName
+      Events:
+        Cognito:
+          Type: Cognito
+          Properties:
+            UserPool: !Ref UserPool
+            Trigger: CreateAuthChallenge
+
+  CreateAuthChallengeFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: CreateAuthChallengeFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${CreateAuthChallengeFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  VerifyAuthChallengeResponseFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub verifyAuthChallengeResponse-${Stage}
+      Description: Function to verify the auth response submitted by the user as part of user verification
+      CodeUri: src/cognitoTriggers/verifyAuthChallengeResponse
+      Handler: index.handler
+      Events:
+        Cognito:
+          Type: Cognito
+          Properties:
+            UserPool: !Ref UserPool
+            Trigger: VerifyAuthChallengeResponse
+
+  VerifyAuthChallengeResponseFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: VerifyAuthChallengeResponseFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${VerifyAuthChallengeResponseFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  PreSignUpFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub preSignUp-${Stage}
+      Description: Function which is called just before user sign up is processed
+      CodeUri: src/cognitoTriggers/preSignUp
+      Handler: index.handler
+      Events:
+        Cognito:
+          Type: Cognito
+          Properties:
+            UserPool: !Ref UserPool
+            Trigger: PreSignUp
+
+  PreSignUpFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: PreSignUpFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${PreSignUpFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  # PostAuthenticationFn:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub postAuthentication-${Stage}
+  #     Description: This function is called after every successful authentication of the user
+  #     CodeUri: src/cognitoTriggers/postAuthentication
+  #     Handler: index.handler
+  #     Role: !GetAtt PostAuthenticationRole.Arn
+  #     Environment:
+  #       Variables:
+  #         TABLE_NAME: !Ref TableName
+  #     Events:
+  #       Cognito:
+  #         Type: Cognito
+  #         Properties:
+  #           UserPool: !Ref UserPool
+  #           Trigger: PostAuthentication
+
+  # PostAuthenticationFnLogGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   DependsOn: PostAuthenticationFn
+  #   Properties:
+  #     LogGroupName: !Sub /aws/lambda/${PostAuthenticationFn}
+  #     RetentionInDays: !Ref LogRetentionInDays
+
+  # PostAuthenticationRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service:
+  #               - lambda.amazonaws.com
+  #           Action:
+  #             - sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # SetUserAttributesPolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyName: allow-set-user-attributes
+  #     PolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             - cognito-idp:AdminUpdateUserAttributes
+  #           Resource:
+  #             - !GetAtt UserPool.Arn
+  #         - Effect: Allow
+  #           Action:
+  #             - dynamodb:UpdateItem
+  #           Resource: !Ref TableArn
+  #     Roles:
+  #       - !Ref PostAuthenticationRole
+
+  PostConfirmationFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub postConfirmation-${Stage}
+      Description: This function is called when a user is confirmed in the system
+      CodeUri: src/cognitoTriggers/postConfirmation
+      Handler: index.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:PutItem
+            Effect: Allow
+            Resource: !Ref TableArn
+      Events:
+        Cognito:
+          Type: Cognito
+          Properties:
+            UserPool: !Ref UserPool
+            Trigger: PostConfirmation
+
+  PostConfirmationFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: PostConfirmationFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${PostConfirmationFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  # LambdaTriggerRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: sts:AssumeRole
+  #           Principal:
+  #             Service: lambda.amazonaws.com
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # LambdaTriggerRoleKmsPolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             - kms:Decrypt
+  #           Resource: !Ref kmsKeyArn
+  #     PolicyName: LambdaKmsPolicy
+  #     Roles:
+  #       - !Ref LambdaTriggerRole
+
+  # CustomEmailSenderFn:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub cognitoEmailSender-${Stage}
+  #     Description: This function is called whenever an email needs to be sent by cognito
+  #     CodeUri: src/cognitoTriggers/customEmailSender
+  #     Handler: index.handler
+  #     Environment:
+  #       Variables:
+  #         SNS_TOPIC_NAME: !Ref TopicArn
+  #     Policies:
+  #       - SNSPublishMessagePolicy:
+  #           TopicName: !Ref TopicName
+
+  # LambdaInvokePermission:
+  #   Type: AWS::Lambda::Permission
+  #   Properties:
+  #     FunctionName: !GetAtt CustomEmailSenderFn.Arn
+  #     Action: lambda:InvokeFunction
+  #     Principal: cognito-idp.amazonaws.com
+  #     SourceArn: !GetAtt UserPool.Arn
+
+  # CustomEmailSenderFnLogGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   DependsOn: CustomEmailSenderFn
+  #   Properties:
+  #     LogGroupName: !Sub /aws/lambda/${CustomEmailSenderFn}
+  #     RetentionInDays: !Ref LogRetentionInDays
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub Jr-${Stage}-UserPool
+      Schema:
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+          RequireUppercase: false
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      # LambdaConfig:
+      #   CustomEmailSender:
+      #     LambdaArn: !GetAtt CustomEmailSenderFn.Arn
+      #     LambdaVersion: V1_0
+      #   KMSKeyID: !Ref KmsKeyArn
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub Jr-${Stage}-UserPoolClient
+      UserPoolId: !Ref UserPool
+      SupportedIdentityProviders:
+        - COGNITO
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_CUSTOM_AUTH
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+
+Outputs:
+  UserPoolId:
+    Description: ID of the User Pool
+    Value: !Ref UserPool
+  UserPoolArn:
+    Description: Arn of the user pool
+    Value: !GetAtt UserPool.Arn
+  UserPoolClientId:
+    Description: ID of the User Pool Client
+    Value: !Ref UserPoolClient

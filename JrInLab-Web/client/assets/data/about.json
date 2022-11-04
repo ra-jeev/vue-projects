@@ -1,0 +1,59 @@
+{
+  "sections": [
+    {
+      "type": "hero",
+      "name": "Hero Section",
+      "background": "lighter",
+      "title": "Empowering the creators of tomorrow",
+      "description": "We are ***Junior Innovation Lab***, and we're on a mission to get our kids ready for the future, today!",
+      "image": {
+        "src": "/assets/images/team_spirit.svg",
+        "alt": "Picture depicting a team",
+        "height": 272
+      }
+    },
+    {
+      "type": "text",
+      "name": "Vision Section",
+      "background": "white",
+      "title": "Our story",
+      "description": "We're a passionate group of coders, educators, tinkerers &mdash; oh yeah, and parents. Being parents we wanted to channelize our kids screen time, and prepare them for the technology dominated future. So we decided to introduce our kids to coding but could not find suitable courses online or in the neighborhood. \n\nWe realized that teaching young kids how to code is a very different ballgame and needs very well designed curriculum. We took the matter into our hands and designed Coding curriculum with excellent content and methodology for most effective learning in kids. \n\nMuch to the surprise of parents, our student have made interesting animations and games at an early age. Also after grasping coding concepts in a fun manner our students find it relatively easy to learn text based languages like Python or Javascript!"
+    },
+    {
+      "type": "text",
+      "name": "Mission Section",
+      "background": "lighter",
+      "title": "Our mission",
+      "description": "We believe that every child needs to be equipped with the best knowledge and tools, to have a chance to succeed in future. The 21*st* century is the century of technology, and to navigate this future, we aim to equip kids with the basic skills like logical reasoning, analytical thinking and nurture their creativity via Coding."
+    },
+    {
+      "type": "cards",
+      "name": "Team Section",
+      "background": "light",
+      "title": "Meet the team",
+      "avatar": true,
+      "cards": [
+        {
+          "title": "Rajeev Ranjan Sharma",
+          "subtitle": "Co-Founder",
+          "description": "B Tech, IIT Kanpur. Entrepreneur, Ex-Samsung, More than 12 years of experience in technology and startups.",
+          "image": {
+            "alt": "Rajeev Ranjan Sharma",
+            "src": "/assets/images/Rajeev.jpg",
+            "height": 160
+          }
+        },
+        {
+          "title": "Vivek Negi",
+          "subtitle": "Co-Founder",
+          "description": "B Tech, IIT Roorkee. MBA, NTU Singapore. Ex-Baker Hughes, 11 years of experience in operations, business and startups.",
+          "image": {
+            "alt": "Vivek Negi",
+            "src": "/assets/images/vivek.jpg",
+            "height": 160
+          }
+        }
+      ]
+    }
+  ]
+}

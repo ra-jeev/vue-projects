@@ -1,0 +1,24 @@
+version = 0.1
+[prod]
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name = "JrInLab-App-Prod"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1b4ywvnf6cm55"
+s3_prefix = "JrInLab-App-Prod"
+region = "ap-south-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
+parameter_overrides = "Stage=\"prod\" DomainName=\"jrinlab.com\" SubDomain=\"*\" CertificateArn=\"arn:aws:acm:us-east-1:879454008690:certificate/bc7e3997-5739-4fd6-a32a-760dc3869826\" OriginRequestRouterFnArn=\"arn:aws:lambda:us-east-1:879454008690:function:studentsOriginsRequest-prod:3\" CreateApex=\"no\" LogRetentionInDays=\"14\" MailgunTransactionalDomain=\"mail.jrinlab.com\" TransactionalSendFromEmail=\"support@jrinlab.com\""
+image_repositories = []
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "JrInLab-App-Dev"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1b4ywvnf6cm55"
+s3_prefix = "JrInLab-App-Dev"
+region = "ap-south-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
+parameter_overrides = "Stage=\"dev\" DomainName=\"jrinlab.com\" SubDomain=\"*\" CertificateArn=\"arn:aws:acm:us-east-1:879454008690:certificate/0a9353a5-e8ff-430f-9c62-07a9f5fa0ac3\" OriginRequestRouterFnArn=\"arn:aws:lambda:us-east-1:879454008690:function:studentsOriginsRequest-dev:3\" CreateApex=\"no\" LogRetentionInDays=\"14\" MailgunTransactionalDomain=\"mail.jrinlab.com\" TransactionalSendFromEmail=\"support@jrinlab.com\""
+image_repositories = []

@@ -1,0 +1,489 @@
+backend:
+  name: git-gateway
+  branch: master
+  squash_merges: true
+
+# when using the default proxy server port
+local_backend: true
+
+media_folder: client/assets/images
+public_folder: /assets/images
+
+site_url: https://jrinlab.com
+publish_mode: editorial_workflow
+
+##########################################################################
+#################### Listing all the reusable configs ####################
+##########################################################################
+# Optional Field Config
+optional: &optional
+  required: false
+
+# Section Name Config
+sectionName: &sectionName
+  label: Section Name
+  name: name
+  widget: string
+
+# Section Background Color Config
+background: &background
+  label: Section Background color
+  name: background
+  widget: select
+  options: [white, dark, light, lighter]
+
+# Title Config - For a section, or any other place (e.g. a card)
+title: &title
+  label: Title
+  name: title
+  widget: string
+
+optTitle: &optTitle # Optional Title
+  <<: [*title, *optional]
+
+# Subtitle Config - For a section, or any other place (e.g. a card)
+subtitle: &subtitle
+  label: Subtitle
+  name: subtitle
+  widget: string
+
+optSubtitle: &optSubtitle # Optional Subtitle
+  <<: [*subtitle, *optional]
+
+# Description Config - For a section, or any other place (e.g. a card)
+description: &description
+  label: Description
+  name: description
+  widget: markdown
+
+optDescription: &optDescription # Optional description
+  <<: [*description, *optional]
+
+# Image Config - For a section, or any other place (e.g. a card)
+image: &image
+  name: image
+  widget: object
+  fields:
+    - { label: Alternate text for the image, name: alt, widget: string }
+    - { label: Image Source, name: src, widget: image }
+    - {
+        label: Image height,
+        name: height,
+        widget: number,
+        default: 272,
+        required: false,
+      }
+    - { label: Image width, name: width, widget: number, required: false }
+
+imageList: &imageList # This config is for an image list
+  label: Images
+  label_singular: Image
+  name: images
+  widget: list
+  fields:
+    - { label: Alternate text for the image, name: alt, widget: string }
+    - { label: Image Source, name: src, widget: image }
+    - { label: Video Source, name: vidsrc, widget: string, required: false }
+    - { label: Image caption, name: caption, widget: string, required: false }
+
+# Call to action Config - For a section, or wherever required
+ctaBtn: &ctaBtn
+  label: Call to action button
+  name: cta
+  widget: object
+  fields:
+    - { label: Button Text, name: text, widget: string }
+    - { label: Action, name: action, widget: string }
+
+optCtaBtn: &optCtaBtn # Option CTA button
+  <<: [*ctaBtn, *optional]
+
+# Alignment Config
+alignLeft: &alignLeft
+  label: Align item to left
+  name: alignLeft
+  widget: boolean
+  default: true
+
+# Single Quote Fields Config
+quoteFields: &quoteFields
+  fields:
+    - { label: Quote text, name: text, widget: text }
+    - label: Quote Author Details
+      name: author
+      widget: object
+      fields:
+        - { label: Author name, name: name, widget: string }
+        - { label: Author details, name: company, widget: string }
+
+# Cards Fields Config
+cardFields: &cardFields
+  label: Cards
+  label_singular: Card
+  name: cards
+  widget: list
+  fields:
+    - <<: *title
+    - <<: *optSubtitle
+    - <<: *description
+    - <<: *image
+      label: Card Image
+
+# Common Hero Section Config
+heroSection: &heroSection
+  label: Hero Section
+  name: hero
+  widget: object
+  fields:
+    - <<: *sectionName
+    - <<: *background
+    - <<: *title
+    - <<: *optDescription
+    - <<: *image
+      label: Hero Section Image
+
+# Cards Section Config
+cardsSection: &cardsSection
+  label: Cards Section
+  name: cards
+  widget: object
+  fields:
+    - <<: *sectionName
+    - <<: *background
+    - <<: *title
+    - <<: *optSubtitle
+    - {
+        label: Add padding to card image?,
+        name: padCardImage,
+        widget: boolean,
+        default: true,
+        required: false,
+      }
+    - {
+        label: Is Avatar Card,
+        name: avatar,
+        widget: boolean,
+        default: true,
+        required: false,
+      }
+    - <<: *cardFields
+
+# Info Section - More like a horizontal cards section
+infoSection: &infoSection
+  label: Info Section
+  name: info
+  widget: object
+  fields:
+    - <<: *sectionName
+    - <<: *background
+    - <<: *title
+    - <<: *optSubtitle
+    - <<: *cardFields
+
+# Pictorial Section Config
+pictorialSection: &pictorialSection
+  label: Pictorial Section
+  name: pictorial
+  widget: object
+  fields:
+    - <<: *sectionName
+    - <<: *background
+    - <<: *title
+    - <<: *optDescription
+    - <<: *optCtaBtn
+    - <<: *image
+      label: Section Image
+    - <<: *alignLeft
+      label: Align image to left
+
+# Text Section Config
+textSection: &textSection
+  label: Text Section
+  name: text
+  widget: object
+  fields:
+    - <<: *sectionName
+    - <<: *background
+    - <<: *title
+    - <<: *description
+
+# Call To Action Section Config
+ctaSection: &ctaSection
+  label: CTA Section
+  name: cta
+  widget: object
+  fields:
+    - <<: *sectionName
+    - <<: *background
+    - <<: *title
+    - <<: *optSubtitle
+    - <<: *ctaBtn
+
+# Policy Pages Config
+policyPageFields: &policyPageFields
+  fields:
+    - label: Sections
+      label_singular: Page section
+      name: sections
+      widget: list
+      types:
+        - <<: *heroSection
+        - label: Policy Details
+          name: policy
+          widget: object
+          fields:
+            - <<: *sectionName
+            - <<: *background
+            - <<: *description
+              label: Full policy text
+
+##########################################################################
+#################### Actual Netlify CMS Configuration ####################
+##########################################################################
+collections:
+  - name: settings
+    label: JrInLab Website Settings
+    description: >
+      You can click on an individual page card to make changes to that particular page settings.
+    delete: false
+    editor:
+      preview: true
+    files:
+      # Settings for home page
+      - name: home
+        label: ~Home~ Settings
+        file: client/assets/data/home.json
+        description: ~Home~ page content, layout and copies
+        fields:
+          - label: Main Section
+            name: main
+            widget: object
+            fields:
+              - label: Cover Hero Image
+                name: hero_image
+                widget: object
+                fields:
+                  - {
+                      label: Alternate text for the hero image,
+                      for screenreaders,
+                      name: alt,
+                      widget: string,
+                    }
+                  - {
+                      label: Image tint gradient,
+                      name: gradient,
+                      widget: hidden,
+                    }
+                  - { label: Image Source, name: src, widget: image }
+                  - { label: Lazy Image Source, name: lazy_src, widget: hidden }
+                  - {
+                      label: Image height,
+                      name: height,
+                      widget: number,
+                      default: 600,
+                    }
+              - label: Copy texts
+                name: copy
+                widget: object
+                fields:
+                  - { label: Punchline, name: punchline, widget: string }
+                  - {
+                      label: Supporting subtext,
+                      name: subtext,
+                      widget: markdown,
+                    }
+                  - { label: Supporting text, name: text, widget: markdown }
+                  - { label: CTA text, name: cta_text, widget: string }
+                  - {
+                      label: CTA input text,
+                      name: cta_input_text,
+                      widget: string,
+                    }
+          - label: Other Sections
+            label_singular: Home page section
+            name: sections
+            widget: list
+            types:
+              - <<: *cardsSection
+              - <<: *infoSection
+              - <<: *pictorialSection
+              - label: Single Quote Section
+                name: quote
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *optTitle
+                    label: Section Title
+                  - <<: *optDescription
+                    label: Section Description
+                  - <<: *optCtaBtn
+                  - <<: *alignLeft
+                    label: Align Quote to left
+                  - label: Quote Details
+                    name: quote
+                    widget: object
+                    <<: *quoteFields
+              - label: Multi Quotes Section
+                name: quotes
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *title
+                  - <<: *optSubtitle
+                  - label: Quotes
+                    label_singular: Quote
+                    name: quotes
+                    widget: list
+                    <<: *quoteFields
+              - <<: *ctaSection
+              - label: Carousel Section
+                name: carousel
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *title
+                  - <<: *optSubtitle
+                  - <<: *optCtaBtn
+                  - <<: *imageList
+                    name: media
+      # Settings for About Us page
+      - name: about
+        label: ~About Us~ Settings
+        file: client/assets/data/about.json
+        description: ~About Us~ page content, layout and copies
+        fields:
+          - label: Sections
+            label_singular: Page section
+            name: sections
+            widget: list
+            types:
+              - <<: *heroSection
+              - <<: *textSection
+              - <<: *cardsSection
+      # Settings for Contact Us page
+      - name: contact
+        label: ~Contact Us~ Settings
+        file: client/assets/data/contact.json
+        description: ~Contact Us~ page content, layout and copies
+        fields:
+          - label: Sections
+            label_singular: Page section
+            name: sections
+            widget: list
+            types:
+              - <<: *heroSection
+              - label: Form Section
+                name: form
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *title
+              - label: Contacts Section
+                name: contacts
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *title
+                  - label: Contacts Info
+                    label_singular: Contact Info
+                    name: contacts
+                    widget: list
+                    fields:
+                      - {
+                          label: Contact type,
+                          name: type,
+                          widget: select,
+                          options: [email, phone],
+                        }
+                      - <<: *title
+                      - { label: Value, name: value, widget: string }
+              - label: Address Section
+                name: offices
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *title
+                  - label: Office Addresses
+                    label_singular: Office Address
+                    name: offices
+                    widget: list
+                    fields:
+                      - { label: Name, name: name, widget: markdown }
+                      - { label: Address, name: address, widget: markdown }
+      # Settings for Gallery Page
+      - name: gallery
+        label: ~Gallery~ Settings
+        file: client/assets/data/gallery.json
+        description: ~Gallery~ page content, layout and copies
+        fields:
+          - label: Sections
+            label_singular: Page section
+            name: sections
+            widget: list
+            types:
+              - <<: *heroSection
+              - label: Gallery Section
+                name: gallery
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *title
+                  - <<: *imageList
+                    name: media
+                    label: Gallery Media
+              - label: Video Gallery Section
+                name: videoGallery
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *title
+                  - <<: *imageList
+                    name: media
+                    label: Gallery Media
+      # Settings for FAQs page
+      - name: faqs
+        label: ~FAQs~ Settings
+        file: client/assets/data/faqs.json
+        description: ~FAQs~ page content, layout and copies
+        fields:
+          - label: Sections
+            label_singular: Page section
+            name: sections
+            widget: list
+            types:
+              - <<: *heroSection
+              - label: FAQs Section
+                name: faqs
+                widget: object
+                fields:
+                  - <<: *sectionName
+                  - <<: *background
+                  - <<: *title
+                  - <<: *optSubtitle
+                  - label: FAQs items
+                    label_singular: FAQ
+                    name: faqs
+                    widget: list
+                    fields:
+                      - { label: Question, name: question, widget: string }
+                      - { label: Answer, name: answer, widget: markdown }
+      # Settings for Policy pages (e.g., Terms of Use & Privacy Policy)
+      - name: terms
+        label: ~Terms of Use~ Settings
+        file: client/assets/data/terms.json
+        description: ~Terms of Use~ page content, layout and copies
+        <<: *policyPageFields
+      # Settings for Policy pages (e.g., Terms of Use & Privacy Policy)
+      - name: privacy
+        label: ~Privacy Policy~ Settings
+        file: client/assets/data/privacy.json
+        description: ~Privacy Policy~ page content, layout and copies
+        <<: *policyPageFields

@@ -1,0 +1,52 @@
+{
+  "sections": [
+    {
+      "type": "hero",
+      "name": "Hero Section",
+      "background": "lighter",
+      "title": "Get in touch",
+      "description": "If you have any queries or feedback for us, or if you'd just like to say hello, please send a message below.",
+      "image": {
+        "src": "/assets/images/contact_us.svg",
+        "alt": "Contact options",
+        "height": 272
+      }
+    },
+    {
+      "type": "form",
+      "name": "Contact form",
+      "background": "white",
+      "title": "Drop us a quick note"
+    },
+    {
+      "type": "contacts",
+      "name": "Contacts Info",
+      "background": "lighter",
+      "title": "Other ways to reach us",
+      "contacts": [
+        {
+          "type": "email",
+          "title": "Email us at:",
+          "value": "hello@jrinlab.com"
+        },
+        {
+          "type": "phone",
+          "title": "Call us at:",
+          "value": "+91 88510 17640"
+        }
+      ]
+    },
+    {
+      "type": "offices",
+      "name": "Office Addresses",
+      "background": "white",
+      "title": "Our Offices",
+      "offices": [
+        {
+          "name": "Gurugram (HQ)",
+          "address": "LG 006, DLF Grand Mall, Mehrauli Gurgaon Road,\\\nDLF Phase 1, Sector 28,\\\nGurgaon - 122001,\\\nHaryana, India"
+        }
+      ]
+    }
+  ]
+}

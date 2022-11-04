@@ -1,0 +1,117 @@
+{
+  "sections": [
+    {
+      "type": "hero",
+      "name": "Hero Section",
+      "background": "lighter",
+      "title": "Gallery",
+      "description": "Photos of our offline events with kids, and some of the cool projects created by our brilliant kids.",
+      "image": {
+        "src": "/assets/images/class_pic_1.jpeg",
+        "alt": "Photo Gallery",
+        "height": 360
+      }
+    },
+    {
+      "type": "videoGallery",
+      "name": "projects section",
+      "background": "white",
+      "title": "Projects gallery",
+      "media": [
+        {
+          "src": "/assets/images/cover_avengers.png",
+          "alt": "Avengers animation created by one of our students",
+          "vidsrc": "https://www.youtube.com/embed/l0uMudxoaTc"
+        },
+        {
+          "src": "/assets/images/cover_coronavirus.png",
+          "alt": "How to fight corona virus animation",
+          "vidsrc": "https://www.youtube.com/embed/zfymu7Iu060"
+        },
+        {
+          "src": "/assets/images/cover_sketch_house.png",
+          "alt": "Maths geometry concepts with block coding",
+          "vidsrc": "https://www.youtube.com/embed/J8JiR4m6Coo"
+        },
+        {
+          "src": "/assets/images/cover_shooting_game.png",
+          "alt": "Cool shooting game by one of our students",
+          "vidsrc": "https://www.youtube.com/embed/HyLk-TiD0o8"
+        },
+        {
+          "src": "/assets/images/cover_cat_mouse.png",
+          "alt": "Cat trying to catch mice",
+          "vidsrc": "https://www.youtube.com/embed/8yIa_5_YllE"
+        }
+      ]
+    },
+    {
+      "type": "gallery",
+      "name": "Gallery Section",
+      "background": "lighter",
+      "title": "Picture gallery",
+      "media": [
+        {
+          "src": "/assets/images/scratch_2.jpeg",
+          "alt": "Kids learning block coding",
+          "caption": "Kids learning block coding"
+        },
+        {
+          "src": "/assets/images/scratch_1.jpeg",
+          "alt": "Kids learning block coding",
+          "caption": "Learning by teaching - block coding"
+        },
+        {
+          "src": "/assets/images/logic.jpeg",
+          "alt": "Kids doing logic puzzle",
+          "caption": "Kids having fun with logic puzzles"
+        },
+        {
+          "src": "/assets/images/astronomy_1.jpeg",
+          "alt": "Kids learning about telescope",
+          "caption": "Astronomy class - Telescope fundamentals"
+        },
+        {
+          "src": "/assets/images/astronomy.jpeg",
+          "alt": "Kids watching moon, Jupiter and Saturn using telescope",
+          "caption": "Astronomy class – Star / Moon gazing"
+        },
+        {
+          "src": "/assets/images/moon_pic.jpeg",
+          "alt": "Moon picture taken through telescope",
+          "caption": "Moon photograph taken through telescope"
+        },
+        {
+          "src": "/assets/images/iot.jpeg",
+          "alt": "Kids learning IoT",
+          "caption": "Kids learning IoT basics"
+        },
+        {
+          "src": "/assets/images/iot_1.jpeg",
+          "alt": "IoT project - Autonomous car being built",
+          "caption": "Kids working on Arduino based autonomous car project"
+        },
+        {
+          "src": "/assets/images/autonomous_car.jpeg",
+          "alt": "Kids demonstrating autonomous car built by them",
+          "caption": "Obstacle avoiding car built by the students"
+        },
+        {
+          "src": "/assets/images/scratch.jpeg",
+          "alt": "Student is demonstrating block coding",
+          "caption": "Learning by teaching"
+        },
+        {
+          "src": "/assets/images/class_pic.jpeg",
+          "alt": "Kids displaying their projects",
+          "caption": "Completion of Hovercraft project"
+        },
+        {
+          "src": "/assets/images/my_first_robot.jpeg",
+          "alt": "Kids displaying their first robot",
+          "caption": "Kids displaying their first robot"
+        }
+      ]
+    }
+  ]
+}

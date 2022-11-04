@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function superAdmin() {
+      return request.auth.uid != null && request.auth.token.admin == true && request.auth.token.accessLevel == 15;
+    }
+
+    function admin() {
+      return request.auth.uid != null && request.auth.token.admin == true
+    }
+
+    function partner() {
+      return request.auth.uid != null && request.auth.token.partner == true
+    }
+
+    match /{path=**}/logs/{log} {
+      allow read, write: if superAdmin()
+    }
+
+    match /demos/{demo} {
+      allow read: if admin() || partner()
+      allow update: if admin()
+      allow delete: if superAdmin()
+      allow create: if true
+
+      match /logs/{log} {
+        allow read, write: if admin()
+      }
+
+      match /courses/{course} {
+        allow read, write: if superAdmin()
+      }
+    }
+
+    match /rejectedDemos/{demo} {
+      allow read, update: if admin()
+      allow delete: if superAdmin()
+      allow create: if true
+
+      match /logs/{log} {
+        allow read, write: if admin()
+      }
+    }
+
+    match /customers/{customer} {
+      allow read, write: if admin()
+    }
+
+    match /messages/{message} {
+      allow create: if true
+      allow read, update: if admin()
+    }
+
+    match /partnerships/{message} {
+      allow create: if true
+      allow read: if admin() || partner()
+      allow update: if admin()
+
+      match /logs/{log} {
+        allow read, write: if admin()
+      }
+    }
+
+    match /payments/{payment} {
+      allow create: if true
+    }
+
+    match /workshops/active {
+      allow read: if true
+    }
+
+    match /workshops/{workshop} {
+      allow read, write: if superAdmin()
+    }
+
+    match /meta/{meta} {
+      allow read: if admin() || partner()
+      allow write: if superAdmin()
+    }
+  }
+}

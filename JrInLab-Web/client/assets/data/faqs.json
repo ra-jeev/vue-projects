@@ -1,0 +1,74 @@
+{
+  "sections": [
+    {
+      "type": "hero",
+      "name": "Hero Section",
+      "background": "lighter",
+      "title": "Frequently Asked Questions",
+      "image": {
+        "src": "/assets/images/questions.svg",
+        "alt": "Frequently Asked Questions",
+        "height": 272
+      }
+    },
+    {
+      "type": "offering",
+      "name": "Offering section",
+      "background": "white",
+      "title": "Our Offerings"
+    },
+    {
+      "type": "faqs",
+      "name": "FAQs Section",
+      "background": "lighter",
+      "title": "Parent's / Student's Questions",
+      "subtitle": "Some of the most commonly asked questions from parents",
+      "faqs": [
+        {
+          "question": "What is the benefit of learning to code?",
+          "answer": "- **Innovative mindset** as coding improves Creativity, Logical Reasoning, Analytical Reasoning, Critical Thinking and Lateral Thinking\n- **Academic improvement** especially in maths as coding involves application of concepts learnt in school (example - using x-y coordinate system or geometry in games)\n- **Bright future** in the technology dominated 21st century. Coding not only opens doors to the best universities or high paying career opportunities but it also helps in understanding how technology works which is essential to build any scalable tech startup today."
+        },
+        {
+          "question": "How are the classes conducted?",
+          "answer": "- The sessions are conducted online over live video conference.\n- To join the sessions you will need a laptop or a desktop, with a functioning camera and mic, and a reliable internet connection."
+        },
+        {
+          "question": "Can my child join the classes using a mobile?",
+          "answer": "- No. Our classes consists of hands on coding activities which can not be done on a mobile.\n- We'll cancel the session if your child joins the class using a mobile."
+        },
+        {
+          "question": "How about an iPad/tablet?",
+          "answer": "If you must. But we recommend that to fully enjoy and understand the sessions you join using a laptop (with a mouse), or a desktop."
+        },
+        {
+          "question": "What is the age group to which you teach coding?",
+          "answer": "We've age appropriate courses for three age groups: 6-7, 8-10 & 11-14"
+        },
+        {
+          "question": "How is the syllabus different for different age groups?",
+          "answer": "Courses are customized for different age groups. There are differences in the pace of covering the syllabus, complexity of topics covered and project work to be done."
+        },
+        {
+          "question": "How many children in a class? Is it 1:1 class?",
+          "answer": "We have both the options - 1:1 Classes and Group Classes. In group classes there can be up to 4 students. Pricing varies accordingly."
+        },
+        {
+          "question": "What if my child misses a class?",
+          "answer": "In exceptional cases we can take an extra class to cover for the missed class."
+        },
+        {
+          "question": "Why choose JrInLab?",
+          "answer": "- **We understand kids!** Before anything else, we're parents first, we've taken extra care in designing the right age appropriate curriculum for our kids. We just happened to be alumni for institutes like IIT & NTU Singapore.\n- Our curriculum is activity based, which emphasizes **experiential learning**.\n- We are **passionate educators** who love teaching, so much so that our *founders* themselves are active educators here."
+        },
+        {
+          "question": "Course Cancellation / Fee Refund Policy",
+          "answer": "You are free to cancel any time. Refund would be on pro rata basis, which means amount for the classes not attended would be refunded."
+        },
+        {
+          "question": "Ok I'm convinced, but what if I don't like the trial class?",
+          "answer": "- No problem. You can simply let us know that you're not interested during the trial class feedback call / interaction with us.\n- **We don't believe in harassing the parents** by making unnecessary calls."
+        }
+      ]
+    }
+  ]
+}

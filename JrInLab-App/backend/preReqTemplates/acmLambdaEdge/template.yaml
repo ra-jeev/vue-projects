@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Certificate for JrInLab domain and its subdomains
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Description: Backend stage to deploy resources to - dev/staging/prod
+    AllowedValues: ['staging', 'prod', 'dev']
+    ConstraintDescription: allowed values dev/staging/prod
+
+  DomainName:
+    Type: String
+    Description: The domain name where the website will be hosted
+
+  SubDomain:
+    Type: String
+    Description: The part of a website address before your DomainName - e.g. www or img
+    AllowedPattern: ^[^.]*$
+
+  CreateApex:
+    Type: String
+    Description: Create an Apex Alias in CloudFront distribution - yes/no
+    Default: 'no'
+    AllowedValues: ['yes', 'no']
+
+  HostedZoneId:
+    Type: String
+    Description: HostedZoneId for the domain e.g. Z23ABC4XYZL05B
+
+  LogRetentionInDays:
+    Type: Number
+    Default: 14
+    Description: Number of days before the cloudwatch logs get deleted
+
+Conditions:
+  IsProd: !Equals [!Ref Stage, prod]
+  CreateApexConfig: !Equals [!Ref CreateApex, 'yes']
+
+Rules:
+  OnlyUsEast1:
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref AWS::Region
+            - us-east-1
+        AssertDescription: |
+          This template can only be deployed in the us-east-1 region.
+          This is because the ACM Certificate & Lambda@Edge must be created in us-east-1
+
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName:
+        !If [
+          IsProd,
+          !Sub '${SubDomain}.${DomainName}',
+          !Sub '${SubDomain}.${Stage}.${DomainName}',
+        ]
+      SubjectAlternativeNames:
+        !If [CreateApexConfig, !Ref DomainName, !Ref AWS::NoValue]
+      DomainValidationOptions:
+        - DomainName:
+            !If [
+              IsProd,
+              !Sub '${SubDomain}.${DomainName}',
+              !Sub '${SubDomain}.${Stage}.${DomainName}',
+            ]
+          HostedZoneId: !Ref HostedZoneId
+      ValidationMethod: DNS
+
+  LambdaEdgeIAMRole:
+    Type: AWS::IAM::Role
+    Description: Lambda Edge IAM Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowLambdaServiceToAssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - edgelambda.amazonaws.com
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+
+  # LAMBDA@EDGE VERSION FUNCTION
+  OriginRequestRouterFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda@Edge function to handle the routing of incoming requests to the correct folders on the S3 origin
+      FunctionName: !Sub studentsOriginsRequest-${Stage}
+      CodeUri: src/edgeLambda
+      Handler: originRequest.handler
+      Role: !GetAtt LambdaEdgeIAMRole.Arn
+      MemorySize: 128
+      Timeout: 30
+      Runtime: nodejs14.x
+      AutoPublishAlias: !Ref Stage
+
+  OriginRequestRouterFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: OriginRequestRouterFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${OriginRequestRouterFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+Outputs:
+  CertificateArn:
+    Description: Issued certificate
+    Value: !Ref Certificate
+  OriginRequestRouterFnArn:
+    Description: Origin request router function Arn
+    Value: !Ref OriginRequestRouterFn.Version

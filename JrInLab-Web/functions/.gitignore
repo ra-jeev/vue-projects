@@ -1,0 +1,6 @@
+# Nodee modules folder
+node_modules/
+
+# Any JWT credentials file
+*jwt*
+*credentials*

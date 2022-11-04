@@ -1,0 +1,222 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Application stack for JrInLab
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Description: Backend stage to deploy resources to - dev/staging/prod
+    AllowedValues: ['staging', 'prod', 'dev']
+    ConstraintDescription: allowed values dev/staging/prod
+
+  DomainName:
+    Type: String
+    Description: The domain name where the website will be hosted
+
+  SubDomain:
+    Type: String
+    Description: The part of a website address before your DomainName - e.g. www or img
+    AllowedPattern: ^[^.]*$
+
+  CertificateArn:
+    Type: String
+    Description: Arn of the ACM Certificate issued in us-east-1 for the mentioned subdomain / domain
+
+  OriginRequestRouterFnArn:
+    Type: String
+    Description: Arn of the lambda@edge function for routing origin requests to the correct s3 bucket dirs
+
+  CreateApex:
+    Type: String
+    Description: Create an Apex Alias in CloudFront distribution - yes/no
+    Default: 'no'
+    AllowedValues: ['yes', 'no']
+
+  LogRetentionInDays:
+    Type: Number
+    Default: 14
+    Description: Number of days before the cloudwatch logs get deleted
+
+  MailgunTransactionalDomain:
+    Type: String
+    Description: Transactional email sending domain for Mailgun
+
+  TransactionalSendFromEmail:
+    Type: String
+    Default: support@jrinlab.com
+    Description: (Required) Email address which will be used for sending transactional email messages.
+
+Conditions:
+  IsProd: !Equals [!Ref Stage, prod]
+  IsStaging: !Equals [!Ref Stage, staging]
+
+Resources:
+  JrInLabSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub Jr-SNSTopic-${Stage}
+
+  # KmsKey:
+  #   Type: AWS::KMS::Key
+  #   Properties:
+  #     Enabled: true
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+  #           Action: kms:*
+  #           Resource: '*'
+  #         - Effect: Allow
+  #           Principal:
+  #             AWS: !Sub arn:aws:iam::${AWS::AccountId}:user/rajeev
+  #           Action:
+  #             - kms:Create*
+  #             - kms:Describe*
+  #             - kms:Enable*
+  #             - kms:List*
+  #             - kms:Put*
+  #             - kms:Update*
+  #             - kms:Revoke*
+  #             - kms:Disable*
+  #             - kms:Get*
+  #             - kms:Delete*
+  #             - kms:TagResource
+  #             - kms:UntagResource
+  #             - kms:ScheduleKeyDeletion
+  #             - kms:CancelKeyDeletion
+  #           Resource: '*'
+
+  CognitoStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: cognito.yaml
+      Parameters:
+        Stage: !Ref Stage
+        TopicArn: !Ref JrInLabSNSTopic
+        TopicName: !GetAtt JrInLabSNSTopic.TopicName
+        LogRetentionInDays: !Ref LogRetentionInDays
+        TableName: !GetAtt DynamoDbStack.Outputs.TableName
+        TableArn: !GetAtt DynamoDbStack.Outputs.TableArn
+        # KmsKeyArn: !GetAtt KmsKey.Arn
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+  AmplifyStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: amplify.yaml
+      Parameters:
+        Stage: !Ref Stage
+        ApiGatewayUrl: !GetAtt RestApisStack.Outputs.WebEndpoint
+        WssApiGatewayUrl: !GetAtt WebSocketStack.Outputs.WebSocketURL
+        UserPoolId: !GetAtt CognitoStack.Outputs.UserPoolId
+        UserPoolClientId: !GetAtt CognitoStack.Outputs.UserPoolClientId
+        StudentsWebDomainSuffix:
+          !If [
+            IsProd,
+            !Sub '${SubDomain}.${DomainName}',
+            !Sub '${SubDomain}.${Stage}.${DomainName}',
+          ]
+        DomainName: !Ref DomainName
+        StudentsAppDomainPrefix: !If [IsProd, 'app', !Sub '${Stage}-app']
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+  S3ResourcesStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: s3-resources.yaml
+      Parameters:
+        Stage: !Ref Stage
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+  CloudFrontStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: cloudfront.yaml
+      Parameters:
+        CertificateArn: !Ref CertificateArn
+        OriginRequestRouterFnArn: !Ref OriginRequestRouterFnArn
+        Stage: !Ref Stage
+        DomainName: !Ref DomainName
+        SubDomain: !If [IsProd, !Ref SubDomain, !Sub '${SubDomain}.${Stage}']
+        CreateApex: !Ref CreateApex
+        S3BucketRoot: !GetAtt S3ResourcesStack.Outputs.S3StudentsSitesBucket
+        S3BucketRootName: !GetAtt S3ResourcesStack.Outputs.S3StudentsSitesBucketName
+        S3BucketRootArn: !GetAtt S3ResourcesStack.Outputs.S3StudentsSitesBucketArn
+        S3BucketLogs: !GetAtt S3ResourcesStack.Outputs.S3StudentsLogsBucket
+        S3BucketLogsName: !GetAtt S3ResourcesStack.Outputs.S3StudentsLogsBucketName
+        LogRetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+  RestApisStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: rest-api.yaml
+      Parameters:
+        Stage: !Ref Stage
+        DomainName: !Ref DomainName
+        SubDomain: !If [IsProd, !Ref SubDomain, !Sub '${SubDomain}.${Stage}']
+        LogRetentionInDays: !Ref LogRetentionInDays
+        StudentsWebsitesBucket: !GetAtt S3ResourcesStack.Outputs.S3StudentsSitesBucket
+        StudentsWebsitesBucketArn: !GetAtt S3ResourcesStack.Outputs.S3StudentsSitesBucketArn
+        StudentsWebsitesTempBucket: !GetAtt S3ResourcesStack.Outputs.S3StudentsSitesTempBucket
+        StudentsWebsitesTempBucketArn: !GetAtt S3ResourcesStack.Outputs.S3StudentsSitesTempBucketArn
+        TableName: !GetAtt DynamoDbStack.Outputs.TableName
+        TableArn: !GetAtt DynamoDbStack.Outputs.TableArn
+        TopicArn: !Ref JrInLabSNSTopic
+        TopicName: !GetAtt JrInLabSNSTopic.TopicName
+        TransactionalEmailDomain: !Ref MailgunTransactionalDomain
+        TransactionalFromEmail: !Ref TransactionalSendFromEmail
+        UserPoolId: !GetAtt CognitoStack.Outputs.UserPoolId
+        UserPoolArn: !GetAtt CognitoStack.Outputs.UserPoolArn
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+  WebSocketStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: websocket.yaml
+      Parameters:
+        Stage: !Ref Stage
+        LogRetentionInDays: !Ref LogRetentionInDays
+        TableName: !GetAtt DynamoDbStack.Outputs.TableName
+        TableArn: !GetAtt DynamoDbStack.Outputs.TableArn
+        TopicArn: !Ref JrInLabSNSTopic
+        UserPoolId: !GetAtt CognitoStack.Outputs.UserPoolId
+        UserPoolClientId: !GetAtt CognitoStack.Outputs.UserPoolClientId
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+  DynamoDbStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: dynamo.yaml
+      Parameters:
+        Stage: !Ref Stage
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !GetAtt RestApisStack.Outputs.WebEndpoint
+  UserPoolId:
+    Description: Cognito user pool id
+    Value: !GetAtt CognitoStack.Outputs.UserPoolId
+  UserPoolClientId:
+    Description: Cognito user pool client id
+    Value: !GetAtt CognitoStack.Outputs.UserPoolClientId

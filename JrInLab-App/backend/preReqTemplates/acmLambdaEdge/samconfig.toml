@@ -1,0 +1,24 @@
+version = 0.1
+[prod]
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name = "JrInLab-ACM-Prod"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-6ka9rg0317l8"
+s3_prefix = "JrInLab-ACM-Prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Stage=\"prod\" DomainName=\"jrinlab.com\" SubDomain=\"*\" CreateApex=\"no\" HostedZoneId=\"Z06878133OZOTCF081FN8\" LogRetentionInDays=\"14\""
+image_repositories = []
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "JrInLab-ACM-Dev"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-6ka9rg0317l8"
+s3_prefix = "JrInLab-ACM-Dev"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Stage=\"dev\" DomainName=\"jrinlab.com\" SubDomain=\"*\" CreateApex=\"no\" HostedZoneId=\"Z06878133OZOTCF081FN8\" LogRetentionInDays=\"14\""
+image_repositories = []

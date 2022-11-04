@@ -1,0 +1,52 @@
+html {
+  overflow-y: auto !important;
+}
+
+.primary-dark {
+  background-color: $primary-dark !important;
+}
+
+.test-bg {
+  background-color: #004e98 !important;
+}
+
+.primary-light {
+  background-color: $primary-light !important;
+}
+
+.primary-dark--text {
+  color: $primary-dark !important;
+}
+
+.thick-outline.v-btn--outlined {
+  border-width: 2px !important;
+}
+
+.primary-light--text {
+  color: $primary-light !important;
+}
+
+.app-link {
+  text-decoration: none;
+}
+
+.auth-title {
+  font-size: 2.5rem;
+  line-height: 2.75rem;
+  font-weight: 700;
+}
+
+.auth-prompt {
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: #616161;
+}
+
+.text-rem-1-125 {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+}
+
+.text-rem-1 {
+  font-size: 1rem;
+}

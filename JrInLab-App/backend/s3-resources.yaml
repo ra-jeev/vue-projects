@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template for creating the S3 buckets for storing websites contents and the access logs
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Description: Backend stage to deploy resources to - dev/staging/prod
+    AllowedValues: ['staging', 'prod', 'dev']
+    ConstraintDescription: allowed values dev/staging/prod
+
+Conditions:
+  IsProd: !Equals [!Ref Stage, prod]
+
+Resources:
+  S3StudentsLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+      BucketName: !Sub ${Stage}-students-websites-logs
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: project
+          Value: JrInLab
+        - Key: stage
+          Value: !Ref Stage
+
+  S3StudentsSitesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${Stage}-students-websites
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LoggingConfiguration:
+        DestinationBucketName: !Ref S3StudentsLogsBucket
+        LogFilePrefix: origin/
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: project
+          Value: JrInLab
+        - Key: stage
+          Value: !Ref Stage
+
+  S3StudentsSitesTempBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${Stage}-tmp-students-websites
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            AllowedMethods:
+              - PUT
+            AllowedOrigins:
+              - !If [IsProd, 'https://app.jrinlab.com', '*']
+      LoggingConfiguration:
+        DestinationBucketName: !Ref S3StudentsLogsBucket
+        LogFilePrefix: upload/
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: project
+          Value: JrInLab
+        - Key: stage
+          Value: !Ref Stage
+
+Outputs:
+  S3StudentsSitesBucket:
+    Description: Website bucket
+    Value: !Ref S3StudentsSitesBucket
+  S3StudentsSitesBucketName:
+    Description: Website bucket name
+    Value: !GetAtt S3StudentsSitesBucket.DomainName
+  S3StudentsSitesBucketArn:
+    Description: Website bucket locator
+    Value: !GetAtt S3StudentsSitesBucket.Arn
+  S3StudentsSitesTempBucket:
+    Description: Website content temp bucket
+    Value: !Ref S3StudentsSitesTempBucket
+  S3StudentsSitesTempBucketArn:
+    Description: Website temp bucket locator
+    Value: !GetAtt S3StudentsSitesTempBucket.Arn
+  S3StudentsLogsBucket:
+    Description: Logging bucket
+    Value: !Ref S3StudentsLogsBucket
+  S3StudentsLogsBucketName:
+    Description: Logging bucket Name
+    Value: !GetAtt S3StudentsLogsBucket.DomainName

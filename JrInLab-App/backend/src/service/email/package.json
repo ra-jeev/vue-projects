@@ -1,0 +1,10 @@
+{
+  "name": "lambda-notify-service",
+  "description": "Lambda function for notifying the clients as well as internal discord channels",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "mailgun-js": "^0.22.0"
+  }
+}

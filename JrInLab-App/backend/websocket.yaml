@@ -1,0 +1,288 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template for creating the web socket resources
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Description: Backend stage to deploy resources to
+
+  UserPoolId:
+    Type: String
+    Description: Id of the cognito user pool
+
+  UserPoolClientId:
+    Type: String
+    Description: Id of the cognito user pool app client
+
+  TableName:
+    Type: String
+    Description: The DynamoDb table name where we'll store and retrieve data from
+
+  TableArn:
+    Type: String
+    Description: The ARN of the DynamoDb table
+
+  TopicArn:
+    Type: String
+    Description: The ARN of the SNS topic where we will publish messages
+
+  LogRetentionInDays:
+    Type: Number
+    Default: 14
+    Description: Number of days before the cloudwatch logs get deleted
+
+Globals:
+  Function:
+    Architectures:
+      - arm64
+    Runtime: nodejs14.x
+    MemorySize: 256
+    Timeout: 5
+    Tracing: Active
+    Environment:
+      Variables:
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    Tags:
+      project: JrInLab
+      stage: !Ref Stage
+
+Resources:
+  JrInLabWebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Description: For handling the realtime communication with the backend for code purposes
+      Name: !Sub JrInLabWebSocketApi-${Stage}
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+  JrInLabWebSocketApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref JrInLabWebSocketApi
+      StageName: !Ref Stage
+      AutoDeploy: true
+      DefaultRouteSettings:
+        DetailedMetricsEnabled: true
+        LoggingLevel: INFO
+        DataTraceEnabled: true
+        ThrottlingBurstLimit: 10
+        ThrottlingRateLimit: 10
+      AccessLogSettings:
+        DestinationArn: !GetAtt WebSocketApiAccessLogGroup.Arn
+        Format: >-
+          {"requestId":"$context.requestId", "ip": "$context.identity.sourceIp",
+          "caller":"$context.identity.caller",
+          "user":"$context.identity.user","requestTime":"$context.requestTime",
+          "eventType":"$context.eventType","routeKey":"$context.routeKey",
+          "status":"$context.status","connectionId":"$context.connectionId"}
+
+  WebSocketApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/api-gw/${JrInLabWebSocketApi}-AccessLogs-${Stage}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  JrInLabWebSocketApiAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref JrInLabWebSocketApi
+      AuthorizerType: REQUEST
+      Name: WebSocketApiAuthorizer
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketAuthFn.Arn}/invocations
+
+  WebSocketAuthResourcePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: JrInLabWebSocketApi
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      FunctionName: !Ref WebSocketAuthFn
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${JrInLabWebSocketApi}/*
+
+  WebSocketAuthFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub webSocketAuth-${Stage}
+      CodeUri: src/auth/websocket
+      Handler: index.handler
+      Description: >
+        Function to handle the auth token verification, and adding context 
+        to the request for further processing by the downstream lambda functions
+      Environment:
+        Variables:
+          COGNITO_USER_POOL_ID: !Ref UserPoolId
+          COGNITO_APP_CLIENT_ID: !Ref UserPoolClientId
+
+  ConnectRouteIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref JrInLabWebSocketApi
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectionHandlerFn.Arn}/invocations
+
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref JrInLabWebSocketApi
+      RouteKey: $connect
+      OperationName: ConnectRoute
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref JrInLabWebSocketApiAuthorizer
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref ConnectRouteIntegration
+
+  DisconnectRouteIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref JrInLabWebSocketApi
+      Description: Disconnect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectionHandlerFn.Arn}/invocations
+
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref JrInLabWebSocketApi
+      RouteKey: $disconnect
+      OperationName: DisconnectRoute
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref DisconnectRouteIntegration
+
+  DefaultRouteIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref JrInLabWebSocketApi
+      Description: Default Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IncomingMessageHandlerFn.Arn}/invocations
+
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref JrInLabWebSocketApi
+      RouteKey: $default
+      OperationName: DefaultRoute
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref DefaultRouteIntegration
+
+  ConnectHandlerFnResourcePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: JrInLabWebSocketApi
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      FunctionName: !Ref ConnectionHandlerFn
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${JrInLabWebSocketApi}/*
+
+  IncomingMessageHandlerFnResourcePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: JrInLabWebSocketApi
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      FunctionName: !Ref IncomingMessageHandlerFn
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${JrInLabWebSocketApi}/*
+
+  ConnectionHandlerFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub socketConnectionHandler-${Stage}
+      CodeUri: src/service/websocket
+      Handler: connection.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+            Effect: Allow
+            Resource: !Ref TableArn
+
+  ConnectionHandlerFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: ConnectionHandlerFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ConnectionHandlerFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  IncomingMessageHandlerFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub socketMessageHandler-${Stage}
+      CodeUri: src/service/websocket
+      Handler: incoming.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Effect: Allow
+            Resource: !Ref TableArn
+
+  IncomingMessageHandlerFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: IncomingMessageHandlerFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${IncomingMessageHandlerFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  # NotifyClientsFn:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ClientNotificationSvc-${Stage}
+  #     CodeUri: src/service/websocket
+  #     Handler: publish.handler
+  #     Description: Function which publishes data changes to the connected frontend clients
+  #     Environment:
+  #       Variables:
+  #         TABLE_NAME: !Ref TableName
+  #         END_POINT: !Sub ${JrInLabWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}
+  #     Policies:
+  #       - DynamoDBReadPolicy:
+  #           TableName: !Ref TableName
+  #       - Statement:
+  #           - Effect: Allow
+  #             Action:
+  #               - execute-api:ManageConnections
+  #             Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${JrInLabWebSocketApi}/*
+  #     Events:
+  #       SNSEvent:
+  #         Type: SNS
+  #         Properties:
+  #           Topic: !Ref TopicArn
+  #           FilterPolicy:
+  #             notify.client:
+  #               - 'true'
+
+  # NotifyClientsFnLogGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   DependsOn: NotifyClientsFn
+  #   Properties:
+  #     LogGroupName: !Sub /aws/lambda/${NotifyClientsFn}
+  #     RetentionInDays: !Ref LogRetentionInDays
+
+Outputs:
+  WebSocketURL:
+    Description: The WSS Protocol URL to connect to
+    Value: !Sub wss://${JrInLabWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/

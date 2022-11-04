@@ -1,0 +1,10 @@
+# AWS SAM build output
+.aws-sam
+
+# Dependency directories
+node_modules/
+
+# macOS
+.DS_Store
+
+.env*

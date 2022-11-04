@@ -1,0 +1,223 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CloudFront distribution with Header Security and for fronting students websites content
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  CertificateArn:
+    Description: Certificate locater
+    Type: String
+  OriginRequestRouterFnArn:
+    Type: String
+    Description: Arn of the lambda@edge function for routing origin requests to the correct s3 bucket dirs
+  Stage:
+    Type: String
+    Description: Backend stage to deploy resources to - dev/staging/prod
+    AllowedValues: ['staging', 'prod', 'dev']
+    ConstraintDescription: allowed values dev/staging/prod
+  DomainName:
+    Description: Apex domain
+    Type: String
+  SubDomain:
+    Description: Subdomain
+    Type: String
+  S3BucketLogs:
+    Description: Logging Bucket
+    Type: String
+  S3BucketRoot:
+    Description: Content Bucket
+    Type: String
+  S3BucketLogsName:
+    Description: Logging Bucket
+    Type: String
+  S3BucketRootName:
+    Description: Content Bucket
+    Type: String
+  S3BucketRootArn:
+    Description: Content Bucket locator
+    Type: String
+  CreateApex:
+    Type: String
+  LogRetentionInDays:
+    Type: Number
+    Default: 14
+    Description: Number of days before the cloudwatch logs get deleted
+
+Conditions:
+  CreateApexConfig: !Equals [!Ref CreateApex, 'yes']
+
+Resources:
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3BucketRoot
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Sub ${S3BucketRootArn}/*
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Sub ${SubDomain}.${DomainName}
+          - !If [CreateApexConfig, !Ref DomainName, !Ref AWS::NoValue]
+        DefaultCacheBehavior:
+          CachePolicyId: !GetAtt CachePolicy.Id
+          Compress: true
+          TargetOriginId: !Sub S3-${AWS::StackName}-root
+          ViewerProtocolPolicy: redirect-to-https
+          ResponseHeadersPolicyId: !Ref ResponseHeadersPolicy
+          LambdaFunctionAssociations:
+            - EventType: origin-request
+              LambdaFunctionARN: !Ref OriginRequestRouterFnArn
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 60
+            ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+          - ErrorCachingMinTTL: 60
+            ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+        Enabled: true
+        HttpVersion: http2
+        DefaultRootObject: index.html
+        IPV6Enabled: true
+        Logging:
+          Bucket: !Ref S3BucketLogsName
+          IncludeCookies: false
+          Prefix: cdn/
+        Origins:
+          - DomainName: !Ref S3BucketRootName
+            Id: !Sub S3-${AWS::StackName}-root
+            OriginCustomHeaders:
+              - HeaderName: domain-suffix
+                HeaderValue: !Sub ${SubDomain}.${DomainName}
+            S3OriginConfig:
+              OriginAccessIdentity:
+                !Join [
+                  '',
+                  [
+                    'origin-access-identity/cloudfront/',
+                    !Ref CloudFrontOriginAccessIdentity,
+                  ],
+                ]
+        PriceClass: PriceClass_All
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+      Tags:
+        - Key: project
+          Value: JrInLab
+        - Key: stage
+          Value: !Ref Stage
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub CloudFront OAI for ${SubDomain}.${DomainName}
+
+  Route53RecordSetGroup:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: !Sub ${DomainName}.
+      RecordSets:
+        - Name: !Sub ${SubDomain}.${DomainName}
+          Type: A
+          AliasTarget:
+            DNSName: !GetAtt CloudFrontDistribution.DomainName
+            EvaluateTargetHealth: false
+            # The  following HosteZoneId is always used for alias records pointing to CF.
+            HostedZoneId: Z2FDTNDATAQYW2
+        - Name: !Sub ${SubDomain}.${DomainName}
+          Type: AAAA
+          AliasTarget:
+            DNSName: !GetAtt CloudFrontDistribution.DomainName
+            EvaluateTargetHealth: false
+            # The  following HosteZoneId is always used for alias records pointing to CF.
+            HostedZoneId: Z2FDTNDATAQYW2
+
+  ApexRoute53RecordSetGroup:
+    Condition: CreateApexConfig
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: !Sub ${DomainName}.
+      RecordSets:
+        - Name: !Ref DomainName
+          Type: A
+          AliasTarget:
+            DNSName: !GetAtt CloudFrontDistribution.DomainName
+            EvaluateTargetHealth: false
+            # The  following HosteZoneId is always used for alias records pointing to CF.
+            HostedZoneId: Z2FDTNDATAQYW2
+        - Name: !Ref DomainName
+          Type: AAAA
+          AliasTarget:
+            DNSName: !GetAtt CloudFrontDistribution.DomainName
+            EvaluateTargetHealth: false
+            # The  following HosteZoneId is always used for alias records pointing to CF.
+            HostedZoneId: Z2FDTNDATAQYW2
+
+  ResponseHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub ${AWS::StackName}-static-site-security-headers
+        SecurityHeadersConfig:
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 63072000
+            IncludeSubdomains: true
+            Override: true
+            Preload: true
+          # ContentSecurityPolicy:
+          #   ContentSecurityPolicy: "default-src 'none'; img-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'"
+          #   Override: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: same-origin
+            Override: true
+          XSSProtection:
+            ModeBlock: true
+            Override: true
+            Protection: true
+
+  CachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        DefaultTTL: 60
+        MaxTTL: 600
+        MinTTL: 2
+        Name: !Sub ${AWS::StackName}-Students-Apps-Cache-Policy
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: none
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          HeadersConfig:
+            HeaderBehavior: whitelist
+            Headers:
+              - Host
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+Outputs:
+  CloudFrontDistribution:
+    Description: CloudFront distribution
+    Value: !GetAtt CloudFrontDistribution.DomainName
+
+  CloudFrontDomainName:
+    Description: Website address
+    Value: !Sub '${SubDomain}.${DomainName}'

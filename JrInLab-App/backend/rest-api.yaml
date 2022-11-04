@@ -1,0 +1,674 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Rest API Gateway and related lambda functions
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  Stage:
+    Type: String
+    Description: Backend stage to deploy resources to - dev/staging/prod
+    AllowedValues: ['staging', 'prod', 'dev']
+    ConstraintDescription: allowed values dev/staging/prod
+
+  DomainName:
+    Description: Apex domain
+    Type: String
+
+  SubDomain:
+    Description: Subdomain
+    Type: String
+
+  LogRetentionInDays:
+    Type: Number
+    Default: 14
+    Description: Number of days before the cloudwatch logs get deleted
+
+  StudentsWebsitesBucket:
+    Type: String
+    Description: The S3 content bucket where the students websites will be hosted from
+
+  StudentsWebsitesBucketArn:
+    Type: String
+    Description: The ARN for the students websites content bucket
+
+  StudentsWebsitesTempBucket:
+    Type: String
+    Description: The S3 content bucket where the students websites will be temporarily uploaded
+
+  StudentsWebsitesTempBucketArn:
+    Type: String
+    Description: The ARN for the students websites temp content bucket
+
+  TableName:
+    Type: String
+    Description: The DynamoDb table name where we'll store and retrieve data from
+
+  TableArn:
+    Type: String
+    Description: The ARN of the DynamoDb table
+
+  TopicArn:
+    Type: String
+    Description: The ARN of the SNS topic where we will publish messages
+
+  TopicName:
+    Type: String
+    Description: The SNS topic name where we can publish messages
+
+  TransactionalEmailDomain:
+    Type: String
+    Description: Transactional email sending domain for Mailgun
+
+  TransactionalFromEmail:
+    Type: String
+    Description: (Required) Email address which will be used for sending transactional email messages.
+
+  UserPoolId:
+    Type: String
+    Description: Id of the cognito user pool
+
+  UserPoolArn:
+    Type: String
+    Description: Arn of the cognito user pool
+
+Conditions:
+  IsProd: !Equals [!Ref Stage, prod]
+  IsStaging: !Equals [!Ref Stage, staging]
+
+Globals:
+  Api:
+    OpenApiVersion: 3.0.1
+    TracingEnabled: true
+    Auth:
+      AddDefaultAuthorizerToCorsPreflight: false
+      DefaultAuthorizer: CognitoAuthorizer
+      Authorizers:
+        CognitoAuthorizer:
+          UserPoolArn: !Ref UserPoolArn
+    Cors:
+      AllowMethods: "'GET, POST, PATCH, DELETE, OPTIONS'"
+      AllowHeaders: "'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token'"
+      AllowOrigin: !If [IsProd, "'https://app.jrinlab.com'", "'*'"]
+    GatewayResponses:
+      DEFAULT_4xx:
+        ResponseParameters:
+          Headers:
+            Access-Control-Allow-Methods: "'GET, POST, PATCH, DELETE, OPTIONS'"
+            Access-Control-Allow-Headers: "'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token'"
+            Access-Control-Allow-Origin:
+              !If [IsProd, "'https://app.jrinlab.com'", "'*'"]
+
+  Function:
+    Architectures:
+      - arm64
+    Runtime: nodejs14.x
+    MemorySize: 256
+    Timeout: 5
+    Tracing: Active
+    Environment:
+      Variables:
+        ALLOWED_METHODS: GET, POST, PATCH, DELETE, OPTIONS
+        ALLOWED_HEADERS: Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token
+        ALLOWED_ORIGINS: !If [IsProd, 'https://app.jrinlab.com', '*']
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    Tags:
+      project: JrInLab
+      stage: !Ref Stage
+
+Resources:
+  JrInLabApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub JrInLabApi-${Stage}
+      Description: API gateway for handling backend calls
+      StageName: !Ref Stage
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiAccessLogGroup.Arn
+        Format: >
+          {"requestTime": "$context.requestTime", "requestId":"$context.requestId", "httpMethod":"$context.httpMethod", "path":"$context.path", "resourcePath":"$context.resourcePath", "status":$context.status, "responseLatency":$context.responseLatency, "xrayTraceId":"$context.xrayTraceId", "integrationRequestId": "$context.integration.requestId", "functionResponseStatus": "$context.integration.status", "integrationLatency": "$context.integration.latency", "integrationServiceStatus": "$context.integration.integrationStatus", "authorizeResultStatus": "$context.authorize.status", "authorizerServiceStatus": "$context.authorizer.status", "authorizerLatency": "$context.authorizer.latency", "authorizerRequestId": "$context.authorizer.requestId", "ip": "$context.identity.sourceIp", "userAgent": "$context.identity.userAgent", "principalId": "$context.authorizer.principalId", "cognitoUser": "$context.identity.cognitoIdentityId", "user": "$context.identity.user", "responseLength':'$context.responseLength"}
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: '/*' # allows for logging on any resource
+          HttpMethod: '*' # allows for logging on any methods
+          MetricsEnabled: true
+      Tags:
+        project: JrInLab
+        stage: !Ref Stage
+
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/api-gw/${JrInLabApi}-AccessLogs-${Stage}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  ApiUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      CompatibleArchitectures:
+        - arm64
+      CompatibleRuntimes:
+        - nodejs14.x
+      LayerName: !Sub ApiUtilsLayer-${Stage}
+      Description: Some utils methods for the APIs
+      ContentUri: src/utils
+    Metadata:
+      BuildMethod: nodejs14.x
+      BuildArchitecture: arm64
+
+  GetUserFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub getUser-${Stage}
+      CodeUri: src/users/get
+      Handler: index.handler
+      Description: Function to fetch user details for a user
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}
+            Method: GET
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  GetUserFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: GetUserFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GetUserFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  UpdateUserFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub updateUser-${Stage}
+      CodeUri: src/users/edit
+      Handler: index.handler
+      Description: Function to update details for a user
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource: !Ref TableArn
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - cognito-idp:AdminUpdateUserAttributes
+            Effect: Allow
+            Resource: !Ref UserPoolArn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}
+            Method: PATCH
+            RestApiId: !Ref JrInLabApi
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref TopicArn
+            FilterPolicy:
+              update.user:
+                - 'true'
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  UpdateUserFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: UpdateUserFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${UpdateUserFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  CheckSubdomainAvailabilityFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub checkDomainAvailability-${Stage}
+      CodeUri: src/websites/checkSubdomain
+      Handler: index.handler
+      Description: Function to check whether a given subdomain is available for user
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          DOMAIN_SUFFIX: !Sub ${SubDomain}.${DomainName}
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:GetItem
+            Effect: Allow
+            Resource: !Ref TableArn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /websites/checkSubdomain
+            Method: GET
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  CheckSubdomainAvailabilityFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: CheckSubdomainAvailabilityFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${CheckSubdomainAvailabilityFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  GetSignedS3UrlFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub getSignedS3Url-${Stage}
+      CodeUri: src/websites/signedUrl
+      Handler: index.handler
+      Description: Function to get signed urls for doing files upload to S3 bucket for students websites
+      Environment:
+        Variables:
+          TEMP_BUCKET: !Ref StudentsWebsitesTempBucket
+          TABLE_NAME: !Ref TableName
+          DOMAIN_SUFFIX: !Sub ${SubDomain}.${DomainName}
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource: !Sub ${StudentsWebsitesTempBucketArn}/*
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+            Effect: Allow
+            Resource: !Ref TableArn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /websites/signedUrl
+            Method: POST
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  GetSignedS3UrlFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: GetSignedS3UrlFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GetSignedS3UrlFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  ReleaseSubdomainFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub releaseSubdomain-${Stage}
+      CodeUri: src/websites/releaseSubdomain
+      Handler: index.handler
+      Description: Function to release the subdomain which was reserved for a user if the website creation fails
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:DeleteItem
+            Effect: Allow
+            Resource: !Ref TableArn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /websites/{subdomain}
+            Method: DELETE
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  ReleaseSubdomainFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: ReleaseSubdomainFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ReleaseSubdomainFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  CreateUserWebsiteFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub createUserWebsite-${Stage}
+      CodeUri: src/users/websites/create
+      Handler: index.handler
+      MemorySize: 512
+      Description: Function to process the files uploaded to the temp bucket and move them to the live bucket for creating user website
+      Environment:
+        Variables:
+          TEMP_BUCKET: !Ref StudentsWebsitesTempBucket
+          PROD_BUCKET: !Ref StudentsWebsitesBucket
+          TABLE_NAME: !Ref TableName
+          DOMAIN_SUFFIX: !Sub ${SubDomain}.${DomainName}
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - s3:GetObject
+              - s3:DeleteObject
+            Effect: Allow
+            Resource: !Sub ${StudentsWebsitesTempBucketArn}/*
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource: !Sub ${StudentsWebsitesBucketArn}/*
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:Query
+            Effect: Allow
+            Resource: !Ref TableArn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}/websites
+            Method: POST
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  CreateUserWebsiteFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: CreateUserWebsiteFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${CreateUserWebsiteFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  UpdateUserWebsiteFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub updateUserWebsite-${Stage}
+      CodeUri: src/users/websites/edit
+      Handler: index.handler
+      MemorySize: 512
+      Description: Function to process the files uploaded to the temp bucket and move them to the live bucket for updating user website
+      Environment:
+        Variables:
+          TEMP_BUCKET: !Ref StudentsWebsitesTempBucket
+          PROD_BUCKET: !Ref StudentsWebsitesBucket
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - s3:GetObject
+              - s3:DeleteObject
+            Effect: Allow
+            Resource: !Sub ${StudentsWebsitesTempBucketArn}/*
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - s3:ListBucket
+            Effect: Allow
+            Resource: !Ref StudentsWebsitesBucketArn
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - s3:PutObject
+              - s3:DeleteObject
+            Effect: Allow
+            Resource: !Sub ${StudentsWebsitesBucketArn}/*
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:Query
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource: !Ref TableArn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}/websites/{subdomain}
+            Method: PATCH
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  UpdateUserWebsiteFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: UpdateUserWebsiteFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${UpdateUserWebsiteFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  DeleteUserWebsiteFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub deleteUserWebsite-${Stage}
+      CodeUri: src/users/websites/delete
+      Handler: index.handler
+      Description: Function to delete an existing website for a user
+      Environment:
+        Variables:
+          PROD_BUCKET: !Ref StudentsWebsitesBucket
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - s3:ListBucket
+            Effect: Allow
+            Resource: !Ref StudentsWebsitesBucketArn
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - s3:DeleteObject
+            Effect: Allow
+            Resource: !Sub ${StudentsWebsitesBucketArn}/*
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Effect: Allow
+            Resource: !Ref TableArn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}/websites/{subdomain}
+            Method: DELETE
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  DeleteUserWebsiteFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: DeleteUserWebsiteFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${DeleteUserWebsiteFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  GetUserWebsitesFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub getUserWebsites-${Stage}
+      CodeUri: src/users/websites/getAll
+      Handler: index.handler
+      Description: Function to fetch all websites created by the user
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}/websites
+            Method: GET
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  GetUserWebsitesFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: GetUserWebsitesFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GetUserWebsitesFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  CreateUserProjectFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub createUserProject-${Stage}
+      CodeUri: src/users/projects/create
+      Handler: index.handler
+      MemorySize: 512
+      Description: Function to process the files uploaded to the temp bucket and move them to the live bucket for creating user website
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Action:
+              - dynamodb:PutItem
+            Effect: Allow
+            Resource: !Ref TableArn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}/projects
+            Method: POST
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  CreateUserProjectFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: CreateUserProjectFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${CreateUserProjectFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  GetUserProjectByIdFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub getUserProjectById-${Stage}
+      CodeUri: src/users/projects/get
+      Handler: index.handler
+      Description: Function to fetch all websites created by the user
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}/projects/{projectId}
+            Method: GET
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  GetUserProjectByIdFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: GetUserProjectByIdFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GetUserProjectByIdFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  GetUserProjectsFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub getUserProjects-${Stage}
+      CodeUri: src/users/projects/getAll
+      Handler: index.handler
+      Description: Function to fetch all websites created by the user
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /users/{id}/projects
+            Method: GET
+            RestApiId: !Ref JrInLabApi
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  GetUserProjectsFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: GetUserProjectsFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GetUserProjectsFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  EmailHandlerFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub emailService-${Stage}
+      CodeUri: src/service/email
+      Handler: index.handler
+      Description: Function which subscribes to the internal SNS and sends relevant emails
+      Environment:
+        Variables:
+          TRANSACTIONAL_SEND_FROM_EMAIL: !Ref TransactionalFromEmail
+          SNS_TOPIC_NAME: !Ref TopicArn
+          MAILGUN_TRANSACTIONAL_SENDER_DOMAIN: !Ref TransactionalEmailDomain
+          MAILGUN_API_KEY: !Sub '{{resolve:secretsmanager:${Stage}/JrInLab/MailgunSecrets:SecretString:ApiKey}}'
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !Ref TopicName
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref TopicArn
+            FilterPolicy:
+              notify.email:
+                - 'true'
+      Layers:
+        - !Ref ApiUtilsLayer
+
+  EmailHandlerFnLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: EmailHandlerFn
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${EmailHandlerFn}
+      RetentionInDays: !Ref LogRetentionInDays
+
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${JrInLabApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/
+  UtilsLayerArn:
+    Description: Arn of the api utils layer
+    Value: !Ref ApiUtilsLayer

@@ -1,0 +1,76 @@
+{
+  "title": "Greeting card workshop",
+  "duration": {
+    "value": "60 mins",
+    "label": "Session duration"
+  },
+  "archived": true,
+  "tags": [
+    "Coding for Kids",
+    "Animation",
+    "Greeting card"
+  ],
+  "benefits": [
+    {
+      "title": "What the workshop is all about?",
+      "description": "Our workshops are an initiative to channelize kids' screen time and creatively engage them. The kids learn to code a complete game/animation from start to finish during the workshop."
+    },
+    {
+      "title": "What we'll achieve?",
+      "description": "The kids will learn the basics of block coding (Scratch), and also how to approach game/animation design and development."
+    },
+    {
+      "title": "Beginner friendly",
+      "description": "We'll start from the very basics, and no prior coding experience, or knowledge is necessary to attend the workshop."
+    },
+    {
+      "title": "Learn from the best",
+      "description": "The workshop will be conducted by our founders themselves. They love to interact with kids, and solving their doubts."
+    }
+  ],
+  "schedules": {
+    "slotLabel": "Available Slot(s)",
+    "dates": [
+      {
+        "name": "2612",
+        "date": "December 26",
+        "slots": [
+          {
+            "name": "2612-1100",
+            "time": "11:00 AM"
+          },
+          {
+            "name": "2612-400",
+            "time": "4:00 PM"
+          }
+        ]
+      },
+      {
+        "name": "2712",
+        "date": "December 27",
+        "slots": [
+          {
+            "name": "2712-400",
+            "time": "4:00 PM"
+          }
+        ]
+      }
+    ],
+    "label": "Workshop Date(s)"
+  },
+  "track": "CompleteRegistration",
+  "sessions": {
+    "label": "Number of sessions",
+    "value": 1
+  },
+  "thumb": "https://firebasestorage.googleapis.com/v0/b/jrinlab.appspot.com/o/workshops%2Fchristmas_greeting_card.png?alt=media&token=eba427c0-331a-441e-bed7-107c98d6a1bc",
+  "fee": {
+    "label": "Workshop fee",
+    "value": 0,
+    "currency": "USD"
+  },
+  "ages": {
+    "label": "Appropriate for",
+    "value": "8-12 years"
+  }
+}

@@ -1,0 +1,194 @@
+{
+  "sections": [
+    {
+      "type": "hero",
+      "name": "Hero Section",
+      "background": "lighter",
+      "title": "{tech club} for school students",
+      "description": "A one stop solution for your school to provide quality STEM education to your students, including Coding, Robotics, AI & IoT.",
+      "image": {
+        "src": "/assets/images/firmware.svg",
+        "alt": "Programmer working with laptop and hardware",
+        "height": 320
+      },
+      "cta": {
+        "text": "Get Started Today",
+        "color": "secondary",
+        "action": "#form"
+      }
+    },
+    {
+      "type": "text",
+      "name": "What Section",
+      "background": "white",
+      "title": "What is {tech club}?",
+      "description": "JrInLab's \"Tech Clubs\" aim to supplement schools, in their quest to provide quality technical education to their students.\n\nHiring and retaining good technical educators for smaller, and independent schools is very difficult, more so, if you're in a non-metro city or town. At the same time, the technical field is quite vast, and ever changing, so it is not possible for a single faculty to keep pace with this rapid change.\n\nWe, at JrInLab, aim to change this through the concept of tech clubs. Tech club gives your school access to:\n- Experts in various technical fields\n- Up-to-date & frequently refreshed quality curriculum\n- A channel for your students to collaborate and learn from each other"
+    },
+    {
+      "type": "info",
+      "name": "Benefits Section",
+      "background": "lighter",
+      "title": "Benefits of {tech club}",
+      "cards": [
+        {
+          "image": {
+            "width": 144,
+            "alt": "Illustration of experts",
+            "src": "/assets/images/experts.svg"
+          },
+          "title": "Access to Experts",
+          "description": "Tech club brings you at par with other schools, by providing you access to experts in different technical fields."
+        },
+        {
+          "image": {
+            "width": 144,
+            "alt": "Depiction of content",
+            "src": "/assets/images/content.svg"
+          },
+          "title": "Quality Tech Curriculum",
+          "description": "Our curriculum is reviewed and refreshed frequently based on how it is received by students. This keeps it up-to-date and relevant."
+        },
+        {
+          "image": {
+            "width": 144,
+            "alt": "Hands On, Experiential Learning",
+            "src": "/assets/images/building_blocks.svg"
+          },
+          "title": "Hands On, Experiential Learning",
+          "description": "No boring lectures. Our curriculum focuses heavily on projects based hands on, experiential learning."
+        },
+        {
+          "image": {
+            "width": 144,
+            "alt": "Mentoring of schools teams",
+            "src": "/assets/images/teaching_1.svg"
+          },
+          "title": "Mentoring School Teams",
+          "description": "It is equally important for students to take part in competitions to build confidence. Tech club mentors school teams for various competitions, to bring laurels to your school."
+        },
+        {
+          "image": {
+            "width": 144,
+            "alt": "Community Depiction",
+            "src": "/assets/images/community.svg"
+          },
+          "title": "24/7 Active Learning Community",
+          "description": "Tech club provides a channel for students to collaborate and learn teamwork. This also provides ample opportunities of peer learning."
+        }
+      ]
+    },
+    {
+      "type": "pictorial",
+      "name": "CTA Section",
+      "background": "white",
+      "title": "Fill the gaps in your school's STEM education",
+      "alignLeft": false,
+      "description": "Take that first step, and talk to us. We'll be more than happy to answer any of your queries.",
+      "cta": {
+        "text": "Contact Us",
+        "color": "secondary",
+        "action": "#form"
+      },
+      "image": {
+        "alt": "Illustration of a girl, standing on top of big books",
+        "src": "/assets/images/education.svg",
+        "height": 240
+      }
+    },
+    {
+      "type": "info-cards",
+      "name": "Activities Section",
+      "padCardImage": true,
+      "background": "lighter",
+      "title": "{tech club} Activities",
+      "cards": [
+        {
+          "image": {
+            "height": 96,
+            "alt": "Illustration of coding",
+            "src": "/assets/images/programming.svg"
+          },
+          "title": "Coding & Development"
+        },
+        {
+          "image": {
+            "height": 96,
+            "alt": "Illustration of robotics and IoT",
+            "src": "/assets/images/robotics_iot.svg"
+          },
+          "title": "Robotics, Circuits & IoT"
+        },
+        {
+          "image": {
+            "height": 96,
+            "alt": "Depiction of A.I.",
+            "src": "/assets/images/artificial_intelligence_1.svg"
+          },
+          "title": "Artificial Intelligence"
+        },
+        {
+          "image": {
+            "height": 96,
+            "alt": "3-D modeling",
+            "src": "/assets/images/3-d_modeling.svg"
+          },
+          "title": "3-D Modeling & Design"
+        },
+        {
+          "image": {
+            "height": 96,
+            "alt": "Drones",
+            "src": "/assets/images/drones.svg"
+          },
+          "title": "Drone Programming"
+        },
+        {
+          "image": {
+            "height": 96,
+            "alt": "more",
+            "src": "/assets/images/duplicate.svg"
+          },
+          "title": "And much more..."
+        }
+      ]
+    },
+    {
+      "type": "carousel",
+      "name": "photo carousel",
+      "background": "white",
+      "title": "Our kids in action",
+      "media": [
+        {
+          "src": "/assets/images/scratch_2.jpeg",
+          "alt": "Kids learning block coding"
+        },
+        {
+          "src": "/assets/images/iot_1.jpeg",
+          "alt": "IoT project - Autonomous car being built"
+        },
+        {
+          "src": "/assets/images/autonomous_car.jpeg",
+          "alt": "Kids demonstrating autonomous car built by them"
+        },
+        {
+          "src": "/assets/images/class_pic.jpeg",
+          "alt": "Kids displaying their projects"
+        },
+        {
+          "src": "/assets/images/scratch.jpeg",
+          "alt": "Student is demonstrating block coding"
+        },
+        {
+          "src": "/assets/images/astronomy_1.jpeg",
+          "alt": "Kids learning about telescope"
+        }
+      ]
+    },
+    {
+      "type": "form",
+      "name": "Partnership form",
+      "background": "lighter",
+      "title": "Partner with JrInLab"
+    }
+  ]
+}

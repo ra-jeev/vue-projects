@@ -1,0 +1,12 @@
+{
+  "name": "lambda-authorizer",
+  "description": "Lambda Token Authorizer for the API Gateway requests",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.25.0",
+    "jsonwebtoken": "^8.5.1",
+    "jwk-to-pem": "^2.0.5"
+  }
+}

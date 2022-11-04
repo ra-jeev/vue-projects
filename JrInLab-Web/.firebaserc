@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "jrinlab-staging",
+    "prod": "jrinlab"
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "main": {
+    "hero_image": {
+      "alt": "A boy doing block coding on his tablet computer",
+      "gradient": "to bottom left, rgba(107, 99, 255, 0.3), rgba(40, 56, 203, 0.6)",
+      "src": "/assets/images/hero-image.jpg",
+      "lazy_src": "data:image/jpeg;base64,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",
+      "height": 600
+    },
+    "copy": {
+      "punchline": "Get your kid future ready, TODAY.",
+      "subtext": "Online coding classes for kids 6-14 years",
+      "text": "Activity based curriculum designed to give your kid the Coding, Maths, and Logical skills to do well in life. To know more, book and experience a live, hands on class.",
+      "cta_text": "Get a free 1:1 class now"
+    }
+  },
+  "sections": [
+    {
+      "type": "cards",
+      "name": "Why Coding",
+      "padCardImage": true,
+      "background": "white",
+      "title": "Why should your kid learn to code?",
+      "subtitle": "Coding is a 21st century superpower. It gives your kid an edge in virtually every modern industry, and sets them up for a lifetime of success.",
+      "cards": [
+        {
+          "image": {
+            "height": 200,
+            "alt": "A boy playing with his toy car",
+            "src": "/assets/images/toy_car.svg"
+          },
+          "title": "Boosts Creativity",
+          "description": "Coding expands the canvas of a kid's imagination. It also enables them to create powerful animations, games & apps."
+        },
+        {
+          "image": {
+            "height": 200,
+            "alt": "A depiction of teacher explaining theory",
+            "src": "/assets/images/teaching.svg"
+          },
+          "title": "Academic Excellence",
+          "description": "Coding is \"Theory in Action\". It helps your kid understand and apply the Maths & Science concepts taught in schools, in a fun way."
+        },
+        {
+          "image": {
+            "height": 200,
+            "alt": "A picture depicting bright future for software professional",
+            "src": "/assets/images/to_the_moon.svg"
+          },
+          "title": "Bright Future",
+          "description": "Coding not only opens the doors to the top colleges & jobs, but it also helps your child develop an entrepreneurial mindset."
+        }
+      ]
+    },
+    {
+      "type": "info",
+      "name": "JrInLab nurtures",
+      "background": "lighter",
+      "title": "JrInLab, Nurturing the creators of tomorrow",
+      "cards": [
+        {
+          "title": "We're parents, too",
+          "description": "Before anything else, we're parents first. We take extra care in designing the right age appropriate curriculum for our kids. We just happened to be alumni of IITs, NTU, Singapore",
+          "image": {
+            "alt": "A mother interacting with her kid",
+            "src": "/assets/images/back_to_school.svg",
+            "width": 112
+          }
+        },
+        {
+          "title": "Focus on Experiential Learning",
+          "description": "*\"I hear, and I forget. I see, and I remember. I do, and I understand.\"* That is why our curriculum is heavily activity based. Your kid will learn the coding concepts by doing hands-on projects. No scope for boring lectures.",
+          "image": {
+            "alt": "Depiction of kids playing with each other",
+            "src": "/assets/images/good_team.svg",
+            "width": 112
+          }
+        },
+        {
+          "title": "Passionate Educators",
+          "description": "We love teaching, so much so that our *founders* themselves are active educators here. The same passion for quality education is shared equally by everyone else in the team.",
+          "image": {
+            "alt": "Depiction of a teacher",
+            "src": "/assets/images/teacher.svg",
+            "width": 112
+          }
+        },
+        {
+          "title": "Full-time Employees",
+          "description": "All of our educators are full-time employees of the company. We believe that teaching kids needs a full-time focus, and part-timers can not do justice with the demands of this role.",
+          "image": {
+            "alt": "Depiction of job pffer letters",
+            "src": "/assets/images/hiring.svg",
+            "width": 112
+          }
+        }
+      ],
+      "cta": {
+        "text": "Get your free class",
+        "action": "register"
+      }
+    },
+    {
+      "type": "carousel",
+      "name": "photo carousel",
+      "background": "white",
+      "title": "Our kids in action",
+      "subtitle": "Some of the cool projects, and pictures of our past interactions with kids",
+      "cta": {
+        "text": "View More...",
+        "action": "gallery"
+      },
+      "media": [
+        {
+          "src": "/assets/images/thumb-Highway-Surfers.png",
+          "alt": "Highway surfers game by 13 years old Aditi",
+          "vidsrc": "https://www.youtube.com/embed/aCZomO8K9wQ"
+        },
+        {
+          "src": "/assets/images/thumb-Flappy-Bird.png",
+          "alt": "Flappy bird game by 10 years old Arjun",
+          "vidsrc": "https://www.youtube.com/embed/-gBtO2rGQtg"
+        },
+        {
+          "src": "/assets/images/thumb-Platformer-Game.png",
+          "alt": "Platformer game by 10 years old Vedant",
+          "vidsrc": "https://www.youtube.com/embed/rsVsCwEEzic"
+        },
+        {
+          "src": "/assets/images/thumb-Solar-System.png",
+          "alt": "Solar system animation by 6 years old Rafael",
+          "vidsrc": "https://www.youtube.com/embed/qRyE_Mj3oJ0"
+        },
+        {
+          "src": "/assets/images/thumb-Space-Game.png",
+          "alt": "Space game by 11 years old Aniruddh",
+          "vidsrc": "https://www.youtube.com/embed/BEMdTcUY0Qo"
+        },
+        {
+          "src": "/assets/images/thumb-Tunnel-Game.png",
+          "alt": "Multi level maze game by 12 years old Samridh",
+          "vidsrc": "https://www.youtube.com/embed/Q67jN8DPEKo"
+        }
+      ]
+    },
+    {
+      "type": "quotes",
+      "name": "famous quotes",
+      "title": "Need more convincing?",
+      "subtitle": "Hear what the experts have said",
+      "background": "lighter",
+      "quotes": [
+        {
+          "text": "I taught myself how to program computers when I was a kid, bought my first computer when I was 10, and sold my first commercial program when I was 12.",
+          "author": {
+            "name": "Elon Musk",
+            "company": "Founder, Tesla & SpaceX"
+          }
+        },
+        {
+          "text": "I think it's fair to say that computers have become the most empowering tool we have ever created. They're tools of communication, they're tools of creativity, and they can be shaped by their user.",
+          "author": {
+            "name": "Bill Gates",
+            "company": "Co-founder, Microsoft"
+          }
+        },
+        {
+          "text": "Everybody should learn to program a computer, because it teaches you how to think.",
+          "author": {
+            "name": "Steve Jobs",
+            "company": "Co-founder, Apple"
+          }
+        }
+      ]
+    },
+    {
+      "type": "testimonials",
+      "name": "testimonials",
+      "title": "Our students and parents love us",
+      "background": "white",
+      "testimonials": [
+        {
+          "text": "Kudos to Mr. Rajeev and Mr. Vivek for always being supportive to any of my queries or requests. I have invited my friends in the UAE to also enroll online and they did and is liking it. My child gained new friends doing the same interest. I would recommend to any parent, new or old, to enroll in JrinLab for they know how to train the child to be FUTURE READY!",
+          "author": {
+            "name": "Ms Agnes",
+            "gender": "female",
+            "info": "Izack's mother, UAE"
+          }
+        },
+        {
+          "text": "My daughter Nidhishree enjoys learning coding from JrinLab...The teacher is very friendly, down to earth and is teaching with lot of passion, dedication and commitment, which  has made my daughter learn coding with enjoyment.....we see lot of improvements in her confidence level in coding.",
+          "author": {
+            "name": "Ms Vani",
+            "gender": "female",
+            "info": "Nidhishree's mother, Bengaluru"
+          }
+        },
+        {
+          "text": "The course was a great exposure for Tanish, he learnt something new. Slowly he will develop interest in this. I would like to thank Syamala mam, for her excellent cooperation, Tanish is usually very uncomfortable with online learning specially with turning on the camera. But mam was really very cooperative, dealt with him very nicely.",
+          "author": {
+            "name": "Ms Swapna",
+            "gender": "female",
+            "info": "Tanish's mother, Oman"
+          }
+        },
+        {
+          "text": "My kid has taken the scratch course, the teacher is excellent, very patient with students, give them a chance to express their ideas and discuss it, listen carefully to their proposals. My kid was never bored, as she was all the time practicing on the software itself and not only taking theoric classes.",
+          "author": {
+            "name": "Ms Salima",
+            "gender": "female",
+            "info": "Safae's mother, Saudi Arabia"
+          }
+        },
+        {
+          "text": "My son is 10 years old. He enjoyed the coding classes by JrinLab. Teacher took special efforts to make him understand the concepts in a playful manner. It is enjoyable learning at the comfort of home. I strongly recommended these classes.",
+          "author": {
+            "name": "Ms Suman Gusain",
+            "gender": "female",
+            "info": "Sarthak's mother, Noida"
+          }
+        }
+      ]
+    },
+    {
+      "type": "pictorial",
+      "name": "bottom cta",
+      "background": "light",
+      "title": "Ready to invest in your child's tomorrow?",
+      "alignLeft": false,
+      "description": "Take that first step by scheduling a free class with us. We guarantee that like all of our students, your kid too will be hooked.",
+      "cta": {
+        "text": "Get that free class now",
+        "action": "register"
+      },
+      "image": {
+        "alt": "A boy opening the window of his room, welcoming the morning",
+        "src": "/assets/images/welcome.svg",
+        "height": 288
+      }
+    }
+  ]
+}
